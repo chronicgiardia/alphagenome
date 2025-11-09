@@ -4,7 +4,8 @@
 The 17p11.2 region is clinically significant - associated with Smith-Magenis
 syndrome (deletion) and Potocki-Lupski syndrome (duplication).
 
-The region spans approximately chr17:16,700,000-20,500,000 (hg38).
+The region spans approximately chr17:14,890,000-21,890,000 (hg38).
+This 7Mb region corresponds to a custom DNA array chip design.
 """
 
 import os
@@ -12,9 +13,9 @@ from alphagenome.data import genome
 from alphagenome.models import dna_client
 
 # Define the 17p11.2 locus coordinates (hg38 assembly)
-# This is the common deletion/duplication region (~3.7 Mb)
-LOCUS_17P11_2_START = 16_700_000
-LOCUS_17P11_2_END = 20_500_000
+# This is the extended region for custom DNA array chip (~7 Mb)
+LOCUS_17P11_2_START = 14_890_000
+LOCUS_17P11_2_END = 21_890_000
 
 # For AlphaGenome, we need to work with supported sequence lengths
 # The locus is ~3.8 Mb, so we'll need to break it into chunks
