@@ -15,6 +15,45 @@
 """Utility functions for Google Colab."""
 
 import os
+import pandas as pd
+
+# Check if we're running in Google Colab
+try:
+  from google.colab import data_table, files, userdata as _userdata
+  IN_COLAB = True
+  # Enable dataframe formatter if in Colab
+  data_table.enable_dataframe_formatter()
+  data_table.DataTable.max_rows = 100_000
+except ImportError:
+  IN_COLAB = False
+  # Set pandas options for better local display
+  pd.set_option('display.max_rows', 100_000)
+  pd.set_option('display.max_columns', None)
+  pd.set_option('display.width', None)
+  pd.set_option('display.max_colwidth', None)
+  
+  # Create mock objects for Colab-specific functionality
+  class MockDataTable:
+    max_rows = 100_000
+    
+    @staticmethod
+    def enable_dataframe_formatter():
+      pass
+  
+  class MockFiles:
+    @staticmethod
+    def download(filename):
+      print(f"File '{filename}' would be downloaded in Google Colab. ")
+      print(f"In local environment, you can find the file at: {filename}")
+    
+    @staticmethod
+    def upload():
+      print("File upload is only available in Google Colab.")
+      print("In local environment, please specify file paths directly.")
+      return {}
+  
+  data_table = MockDataTable()
+  files = MockFiles()
 
 
 def get_api_key(secret: str = 'ALPHA_GENOME_API_KEY'):
@@ -35,18 +74,14 @@ def get_api_key(secret: str = 'ALPHA_GENOME_API_KEY'):
   if api_key := os.environ.get(secret):
     return api_key
 
-  try:
-    # pylint: disable=g-import-not-at-top, import-outside-toplevel
-    from google.colab import userdata  # pytype: disable=import-error
-    # pylint: enable=g-import-not-at-top, import-outside-toplevel
-
+  if IN_COLAB:
     try:
-      api_key = userdata.get(secret)
+      api_key = _userdata.get(secret)
       return api_key
     except (
-        userdata.NotebookAccessError,
-        userdata.SecretNotFoundError,
-        userdata.TimeoutException,
+        _userdata.NotebookAccessError,
+        _userdata.SecretNotFoundError,
+        _userdata.TimeoutException,
     ) as e:
       raise ValueError(
           f'Cannot find or access API key in Colab secrets with {secret=}. Make'
@@ -55,8 +90,5 @@ def get_api_key(secret: str = 'ALPHA_GENOME_API_KEY'):
           ' https://www.alphagenomedocs.com/installation.html#add-api-key-to-secrets'
           ' for more details.'
       ) from e
-  except ImportError:
-    # Not running in Colab.
-    pass
 
   raise ValueError(f'Cannot find API key with {secret=}.')
