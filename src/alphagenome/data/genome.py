@@ -50,46 +50,42 @@ class Strand(enum.IntEnum):
   UNSTRANDED = enum.auto()
 
   def __str__(self):
-    match self:
-      case Strand.POSITIVE:
-        return STRAND_POSITIVE
-      case Strand.NEGATIVE:
-        return STRAND_NEGATIVE
-      case Strand.UNSTRANDED:
-        return STRAND_UNSTRANDED
+    if self == Strand.POSITIVE:
+      return STRAND_POSITIVE
+    elif self == Strand.NEGATIVE:
+      return STRAND_NEGATIVE
+    elif self == Strand.UNSTRANDED:
+      return STRAND_UNSTRANDED
 
   @classmethod
   def from_str(cls, strand: str) -> Self:
-    match strand:
-      case '+':
-        return cls.POSITIVE
-      case '-':
-        return cls.NEGATIVE
-      case '.':
-        return cls.UNSTRANDED
-      case _:
-        raise ValueError(f'Strand needs to be in {STRAND_OPTIONS}')
+    if strand == '+':
+      return cls.POSITIVE
+    elif strand == '-':
+      return cls.NEGATIVE
+    elif strand == '.':
+      return cls.UNSTRANDED
+    else:
+      raise ValueError(f'Strand needs to be in {STRAND_OPTIONS}')
 
   def to_proto(self) -> dna_model_pb2.Strand:
-    match self:
-      case Strand.POSITIVE:
-        return dna_model_pb2.Strand.STRAND_POSITIVE
-      case Strand.NEGATIVE:
-        return dna_model_pb2.Strand.STRAND_NEGATIVE
-      case Strand.UNSTRANDED:
-        return dna_model_pb2.Strand.STRAND_UNSTRANDED
+    if self == Strand.POSITIVE:
+      return dna_model_pb2.Strand.STRAND_POSITIVE
+    elif self == Strand.NEGATIVE:
+      return dna_model_pb2.Strand.STRAND_NEGATIVE
+    elif self == Strand.UNSTRANDED:
+      return dna_model_pb2.Strand.STRAND_UNSTRANDED
 
   @classmethod
   def from_proto(cls, strand: dna_model_pb2.Strand) -> Self:
-    match strand:
-      case dna_model_pb2.Strand.STRAND_POSITIVE:
-        return cls.POSITIVE
-      case dna_model_pb2.Strand.STRAND_NEGATIVE:
-        return cls.NEGATIVE
-      case dna_model_pb2.Strand.STRAND_UNSTRANDED:
-        return cls.UNSTRANDED
-      case _:
-        raise ValueError(f'Strand needs to be in {STRAND_OPTIONS}')
+    if strand == dna_model_pb2.Strand.STRAND_POSITIVE:
+      return cls.POSITIVE
+    elif strand == dna_model_pb2.Strand.STRAND_NEGATIVE:
+      return cls.NEGATIVE
+    elif strand == dna_model_pb2.Strand.STRAND_UNSTRANDED:
+      return cls.UNSTRANDED
+    else:
+      raise ValueError(f'Strand needs to be in {STRAND_OPTIONS}')
 
 
 PYRANGES_INTERVAL_COLUMNS = ('Chromosome', 'Start', 'End', 'Strand', 'Name')
@@ -632,17 +628,16 @@ class VariantFormat(enum.Enum):
 
   def to_regex(self) -> re.Pattern[str]:
     """Returns a regular expression for the variant format."""
-    match self:
-      case VariantFormat.DEFAULT:
-        return _DEFAULT_REGEX
-      case VariantFormat.GTEX:
-        return _GTEX_REGEX
-      case VariantFormat.OPEN_TARGETS:
-        return _OPEN_TARGETS_REGEX
-      case VariantFormat.OPEN_TARGETS_BIGQUERY:
-        return _OPEN_TARGETS_BIGQUERY_REGEX
-      case VariantFormat.GNOMAD:
-        return _GNOMAD_REGEX
+    if self == VariantFormat.DEFAULT:
+      return _DEFAULT_REGEX
+    elif self == VariantFormat.GTEX:
+      return _GTEX_REGEX
+    elif self == VariantFormat.OPEN_TARGETS:
+      return _OPEN_TARGETS_REGEX
+    elif self == VariantFormat.OPEN_TARGETS_BIGQUERY:
+      return _OPEN_TARGETS_BIGQUERY_REGEX
+    elif self == VariantFormat.GNOMAD:
+      return _GNOMAD_REGEX
 
 
 @dataclasses.dataclass

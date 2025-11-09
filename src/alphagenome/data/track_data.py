@@ -376,11 +376,10 @@ class TrackData:
     values = self.values
     for axis in self.positional_axes:
       values = np.repeat(values, repeat, axis=axis)
-      match aggregation_type:
-        case AggregationType.SUM:
-          values = values / repeat
-        case AggregationType.MAX:
-          pass
+      if aggregation_type == AggregationType.SUM:
+        values = values / repeat
+      elif aggregation_type == AggregationType.MAX:
+        pass
     return TrackData(
         values,
         resolution=resolution,
@@ -423,11 +422,10 @@ class TrackData:
       reshaped_values = values.reshape(
           [shape[0] // pool_width, pool_width] + shape[1:]
       )
-      match aggregation_type:
-        case AggregationType.SUM:
-          values = reshaped_values.sum(axis=1)
-        case AggregationType.MAX:
-          values = reshaped_values.max(axis=1)
+      if aggregation_type == AggregationType.SUM:
+        values = reshaped_values.sum(axis=1)
+      elif aggregation_type == AggregationType.MAX:
+        values = reshaped_values.max(axis=1)
       values = np.swapaxes(values, 0, axis)
 
     return TrackData(
@@ -567,48 +565,46 @@ class TrackData:
         )
 
     tdata = self
-    match position_index:
-      case None:
-        pass
-      case int():
-        tdata = tdata.slice_by_positions(position_index, position_index + 1)
-      case slice():
-        if position_index.step is not None and position_index.step != 1:
-          raise IndexError('Slice step must be 1 for positional indexing.')
-        if position_index != slice(None):
-          tdata = tdata.slice_by_positions(
-              position_index.start, position_index.stop
-          )
-      case genome.Interval():
-        tdata = tdata.slice_by_interval(position_index)
-      case _:
-        raise IndexError(
-            f'Unsupported positional index type: {type(position_index)}'
+    if position_index is None:
+      pass
+    elif isinstance(position_index, int):
+      tdata = tdata.slice_by_positions(position_index, position_index + 1)
+    elif isinstance(position_index, slice):
+      if position_index.step is not None and position_index.step != 1:
+        raise IndexError('Slice step must be 1 for positional indexing.')
+      if position_index != slice(None):
+        tdata = tdata.slice_by_positions(
+            position_index.start, position_index.stop
         )
+    elif isinstance(position_index, genome.Interval):
+      tdata = tdata.slice_by_interval(position_index)
+    else:
+      raise IndexError(
+          f'Unsupported positional index type: {type(position_index)}'
+      )
 
-    match track_index:
-      case None:
-        pass
-      case str():
-        tdata = tdata.select_tracks_by_name([track_index])
-      case int():
-        tdata = tdata.select_tracks_by_index([track_index])
-      case slice():
-        if track_index != slice(None):
-          indices = np.arange(tdata.num_tracks)[track_index]
-          tdata = tdata.select_tracks_by_index(indices)
-      case np.ndarray() if np.issubdtype(track_index.dtype, np.character):
-        tdata = tdata.select_tracks_by_name(track_index)
-      case np.ndarray():
-        tdata = tdata.select_tracks_by_index(track_index)
-      case Sequence():
-        track_index_arr = np.asarray(track_index)
-        if np.issubdtype(track_index_arr.dtype, np.character):
-          tdata = tdata.select_tracks_by_name(track_index_arr)
-        else:
-          tdata = tdata.select_tracks_by_index(track_index_arr)
-      case _:
-        raise IndexError(f'Unsupported track index type: {type(track_index)}')
+    if track_index is None:
+      pass
+    elif isinstance(track_index, str):
+      tdata = tdata.select_tracks_by_name([track_index])
+    elif isinstance(track_index, int):
+      tdata = tdata.select_tracks_by_index([track_index])
+    elif isinstance(track_index, slice):
+      if track_index != slice(None):
+        indices = np.arange(tdata.num_tracks)[track_index]
+        tdata = tdata.select_tracks_by_index(indices)
+    elif isinstance(track_index, np.ndarray) and np.issubdtype(track_index.dtype, np.character):
+      tdata = tdata.select_tracks_by_name(track_index)
+    elif isinstance(track_index, np.ndarray):
+      tdata = tdata.select_tracks_by_index(track_index)
+    elif isinstance(track_index, Sequence):
+      track_index_arr = np.asarray(track_index)
+      if np.issubdtype(track_index_arr.dtype, np.character):
+        tdata = tdata.select_tracks_by_name(track_index_arr)
+      else:
+        tdata = tdata.select_tracks_by_index(track_index_arr)
+    else:
+      raise IndexError(f'Unsupported track index type: {type(track_index)}')
     return tdata
 
   def groupby(self, column: str) -> dict[str, 'TrackData']:

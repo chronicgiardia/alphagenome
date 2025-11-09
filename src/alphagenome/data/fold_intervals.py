@@ -76,23 +76,22 @@ def get_fold_names(
     model_version: dna_client.ModelVersion, subset: Subset
 ) -> list[str]:
   """Returns the data folds used for the model version."""
-  match subset:
-    case Subset.VALID:
-      return [_VALID_FOLD[_MODEL_VERSION_TO_FOLD[model_version]]]
-    case Subset.TEST:
-      return [_TEST_FOLD[_MODEL_VERSION_TO_FOLD[model_version]]]
-    case Subset.TRAIN:
-      all_folds = get_all_folds()
-      if _MODEL_VERSION_TO_FOLD[model_version] == -1:
-        return all_folds
-      remove_folds = get_fold_names(
-          model_version, Subset.VALID
-      ) + get_fold_names(model_version, Subset.TEST)
-      for fold in remove_folds:
-        all_folds.remove(fold)
+  if subset == Subset.VALID:
+    return [_VALID_FOLD[_MODEL_VERSION_TO_FOLD[model_version]]]
+  elif subset == Subset.TEST:
+    return [_TEST_FOLD[_MODEL_VERSION_TO_FOLD[model_version]]]
+  elif subset == Subset.TRAIN:
+    all_folds = get_all_folds()
+    if _MODEL_VERSION_TO_FOLD[model_version] == -1:
       return all_folds
-    case _:
-      raise ValueError(f'Unknown {subset=}')
+    remove_folds = get_fold_names(
+        model_version, Subset.VALID
+    ) + get_fold_names(model_version, Subset.TEST)
+    for fold in remove_folds:
+      all_folds.remove(fold)
+    return all_folds
+  else:
+    raise ValueError(f'Unknown subset={subset}')
 
 
 def get_fold_intervals(

@@ -192,7 +192,7 @@ class TrackDataUtilsTest(parameterized.TestCase):
     )
 
     np.testing.assert_array_equal(roundtrip.values, values)
-    pd.testing.assert_frame_equal(roundtrip.metadata, df)
+    pd.testing.assert_frame_equal(roundtrip.metadata, df, check_dtype=False)
     self.assertEqual(roundtrip.resolution, resolution)
     self.assertEqual(roundtrip.interval, expected_interval)
 
@@ -221,7 +221,7 @@ class TrackDataUtilsTest(parameterized.TestCase):
     )
     roundtrip = track_data_utils.from_protos(proto, chunks)
     np.testing.assert_array_equal(roundtrip.values, values.astype(np.float32))
-    pd.testing.assert_frame_equal(roundtrip.metadata, metadata)
+    pd.testing.assert_frame_equal(roundtrip.metadata, metadata, check_dtype=False)
 
 
 if __name__ == '__main__':

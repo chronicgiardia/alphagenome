@@ -48,22 +48,20 @@ def _compress_bytes(
   """Compresses a c-contiguous array to the specified compression type."""
   assert array.flags.c_contiguous
   array = array.view(np.uint8)
-  match compression_type:
-    case tensor_pb2.CompressionType.COMPRESSION_TYPE_ZSTD:
-      return zstandard.compress(array.data)
-    case tensor_pb2.CompressionType.COMPRESSION_TYPE_NONE:
-      return bytes(array.data)
+  if compression_type == tensor_pb2.CompressionType.COMPRESSION_TYPE_ZSTD:
+    return zstandard.compress(array.data)
+  elif compression_type == tensor_pb2.CompressionType.COMPRESSION_TYPE_NONE:
+    return bytes(array.data)
 
 
 def _decompress_bytes(
     data: bytes, compression_type: tensor_pb2.CompressionType
 ):
   """Decompress bytes using the specified compression type."""
-  match compression_type:
-    case tensor_pb2.CompressionType.COMPRESSION_TYPE_ZSTD:
-      return zstandard.decompress(data)
-    case tensor_pb2.CompressionType.COMPRESSION_TYPE_NONE:
-      return data
+  if compression_type == tensor_pb2.CompressionType.COMPRESSION_TYPE_ZSTD:
+    return zstandard.decompress(data)
+  elif compression_type == tensor_pb2.CompressionType.COMPRESSION_TYPE_NONE:
+    return data
 
 
 def pack_tensor(
@@ -130,18 +128,18 @@ def unpack_proto(
   Returns:
     NumPy array of the unpacked data.
   """
-  match proto.WhichOneof('payload'):
-    case 'array':
-      data = _decompress_bytes(proto.array.data, proto.array.compression_type)
-    case 'chunk_count':
-      data = b''.join([
-          _decompress_bytes(chunk.data, chunk.compression_type)
-          for chunk in chunks
-      ])
-    case _:
-      raise ValueError(
-          f'Unsupported payload type: {proto.WhichOneof("payload")}'
-      )
+  payload_type = proto.WhichOneof('payload')
+  if payload_type == 'array':
+    data = _decompress_bytes(proto.array.data, proto.array.compression_type)
+  elif payload_type == 'chunk_count':
+    data = b''.join([
+        _decompress_bytes(chunk.data, chunk.compression_type)
+        for chunk in chunks
+    ])
+  else:
+    raise ValueError(
+        f'Unsupported payload type: {proto.WhichOneof("payload")}'
+    )
 
   array = np.frombuffer(
       data, dtype=_TENSOR_DTYPE_TO_NUMPY_DTYPE[proto.data_type]

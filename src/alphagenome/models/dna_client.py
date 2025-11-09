@@ -190,29 +190,29 @@ def _make_output_data(
     interval: genome.Interval | None = None,
 ) -> track_data.TrackData | np.ndarray | junction_data.JunctionData:
   """Helper to create an output data object from an output proto."""
-  match output.WhichOneof('payload'):
-    case 'track_data':
-      return track_data_utils.from_protos(
-          output.track_data,
-          _read_tensor_chunks(responses, output.track_data.values.chunk_count),
-          interval=interval,
-      )
-    case 'data':
-      chunks = _read_tensor_chunks(responses, output.data.chunk_count)
-      values = tensor_utils.unpack_proto(output.data, chunks)
-      return tensor_utils.upcast_floating(values)
-    case 'junction_data':
-      return junction_data_utils.from_protos(
-          output.junction_data,
-          _read_tensor_chunks(
-              responses, output.junction_data.values.chunk_count
-          ),
-          interval=interval,
-      )
-    case _:
-      raise ValueError(
-          f'Unsupported output type: {output.WhichOneof("payload")}'
-      )
+  payload_type = output.WhichOneof('payload')
+  if payload_type == 'track_data':
+    return track_data_utils.from_protos(
+        output.track_data,
+        _read_tensor_chunks(responses, output.track_data.values.chunk_count),
+        interval=interval,
+    )
+  elif payload_type == 'data':
+    chunks = _read_tensor_chunks(responses, output.data.chunk_count)
+    values = tensor_utils.unpack_proto(output.data, chunks)
+    return tensor_utils.upcast_floating(values)
+  elif payload_type == 'junction_data':
+    return junction_data_utils.from_protos(
+        output.junction_data,
+        _read_tensor_chunks(
+            responses, output.junction_data.values.chunk_count
+        ),
+        interval=interval,
+    )
+  else:
+    raise ValueError(
+        f'Unsupported output type: {output.WhichOneof("payload")}'
+    )
 
 
 def construct_output_metadata(
@@ -222,20 +222,20 @@ def construct_output_metadata(
   metadata = {}
   for response in responses:
     for metadata_proto in response.output_metadata:
-      match metadata_proto.WhichOneof('payload'):
-        case 'tracks':
-          metadata[metadata_proto.output_type] = (
-              track_data_utils.metadata_from_proto(metadata_proto.tracks)
-          )
-        case 'junctions':
-          metadata[metadata_proto.output_type] = (
-              junction_data_utils.metadata_from_proto(metadata_proto.junctions)
-          )
-        case _:
-          raise ValueError(
-              'Unsupported metadata type:'
-              f' {metadata_proto.WhichOneof("payload")}'
-          )
+      payload_type = metadata_proto.WhichOneof('payload')
+      if payload_type == 'tracks':
+        metadata[metadata_proto.output_type] = (
+            track_data_utils.metadata_from_proto(metadata_proto.tracks)
+        )
+      elif payload_type == 'junctions':
+        metadata[metadata_proto.output_type] = (
+            junction_data_utils.metadata_from_proto(metadata_proto.junctions)
+        )
+      else:
+        raise ValueError(
+            'Unsupported metadata type:'
+            f' {metadata_proto.WhichOneof("payload")}'
+        )
 
   return OutputMetadata(
       atac=metadata.get(dna_model_pb2.OUTPUT_TYPE_ATAC),
@@ -290,17 +290,17 @@ def _make_output(
   outputs = {}
 
   for response in responses:
-    match response.WhichOneof('payload'):
-      case 'output':
-        outputs[response.output.output_type] = _make_output_data(
-            response.output, responses, interval=interval
-        )
-      case 'tensor_chunk':
-        raise ValueError('Received tensor chunk before output proto.')
-      case _:
-        raise ValueError(
-            f'Unsupported response type: {response.WhichOneof("payload")}'
-        )
+    payload_type = response.WhichOneof('payload')
+    if payload_type == 'output':
+      outputs[response.output.output_type] = _make_output_data(
+          response.output, responses, interval=interval
+      )
+    elif payload_type == 'tensor_chunk':
+      raise ValueError('Received tensor chunk before output proto.')
+    else:
+      raise ValueError(
+          f'Unsupported response type: {response.WhichOneof("payload")}'
+      )
 
   return _construct_output(outputs)
 
@@ -313,21 +313,21 @@ def _make_variant_output(
   alt_outputs = {}
 
   for response in responses:
-    match response.WhichOneof('payload'):
-      case 'reference_output':
-        ref_outputs[response.reference_output.output_type] = _make_output_data(
-            response.reference_output, responses
-        )
-      case 'alternate_output':
-        alt_outputs[response.alternate_output.output_type] = _make_output_data(
-            response.alternate_output, responses
-        )
-      case 'tensor_chunk':
-        raise ValueError('Received tensor chunk before output proto.')
-      case _:
-        raise ValueError(
-            f'Unsupported response type: {response.WhichOneof("payload")}'
-        )
+    payload_type = response.WhichOneof('payload')
+    if payload_type == 'reference_output':
+      ref_outputs[response.reference_output.output_type] = _make_output_data(
+          response.reference_output, responses
+      )
+    elif payload_type == 'alternate_output':
+      alt_outputs[response.alternate_output.output_type] = _make_output_data(
+          response.alternate_output, responses
+      )
+    elif payload_type == 'tensor_chunk':
+      raise ValueError('Received tensor chunk before output proto.')
+    else:
+      raise ValueError(
+          f'Unsupported response type: {response.WhichOneof("payload")}'
+      )
 
   return VariantOutput(
       reference=_construct_output(ref_outputs),
@@ -427,19 +427,19 @@ def _make_score_variant_output(
 
   anndata_scores = []
   for response in responses:
-    match response.WhichOneof('payload'):
-      case 'output':
-        anndata_scores.append(
-            _construct_score_variant(
-                response.output, responses, interval=interval
-            )
-        )
-      case 'tensor_chunk':
-        raise ValueError('Received tensor chunk before output proto.')
-      case _:
-        raise ValueError(
-            f'Unsupported response type: {response.WhichOneof("payload")}'
-        )
+    payload_type = response.WhichOneof('payload')
+    if payload_type == 'output':
+      anndata_scores.append(
+          _construct_score_variant(
+              response.output, responses, interval=interval
+          )
+      )
+    elif payload_type == 'tensor_chunk':
+      raise ValueError('Received tensor chunk before output proto.')
+    else:
+      raise ValueError(
+          f'Unsupported response type: {response.WhichOneof("payload")}'
+      )
   return anndata_scores
 
 
@@ -471,21 +471,21 @@ def _make_interval_output(
 
   anndata_scores = []
   for response in responses:
-    match response.WhichOneof('payload'):
-      case 'output':
-        anndata_scores.append(
-            _construct_score_interval(
-                response.output,
-                responses,
-                interval=interval,
-            )
-        )
-      case 'tensor_chunk':
-        raise ValueError('Received tensor chunk before output proto.')
-      case _:
-        raise ValueError(
-            f'Unsupported response type: {response.WhichOneof("payload")}'
-        )
+    payload_type = response.WhichOneof('payload')
+    if payload_type == 'output':
+      anndata_scores.append(
+          _construct_score_interval(
+              response.output,
+              responses,
+              interval=interval,
+          )
+      )
+    elif payload_type == 'tensor_chunk':
+      raise ValueError('Received tensor chunk before output proto.')
+    else:
+      raise ValueError(
+          f'Unsupported response type: {response.WhichOneof("payload")}'
+      )
   return anndata_scores
 
 
